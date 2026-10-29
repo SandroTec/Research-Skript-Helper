@@ -1,4 +1,4 @@
-# Inside Verbrechen – Redaktionsstudio
+# Research-Skript-Helper – Inside Verbrechen Redaktionsstudio
 
 Lokales Angular-21-MVP für Podcast-Analytics, Transkriptimport, Stilprofil, Themenverwaltung, Recherche-Dossiers und Skriptentwürfe.
 
