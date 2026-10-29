@@ -1,1 +1,6 @@
-/* You can add global styles to this file, and also import other style files */
+* { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; background: #101112; color: #f0efed; font-size: 16px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+span { font-size: 14px; }
+button, input, textarea { font: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #cf766e; outline-offset: 2px; }
+::selection { background: #793733; color: white; }

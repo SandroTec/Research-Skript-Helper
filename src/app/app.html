@@ -1,344 +1,124 @@
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content below * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced.  * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * Delete the template below * * * * * * * * * -->
-<!-- * * * * * * * to get started with your project! * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" (click)="navigate('dashboard')" aria-label="Inside Verbrechen Startseite">
+      <span class="brand-mark">IV</span><span><strong>INSIDE</strong><small>VERBRECHEN</small></span>
+    </a>
+    <div class="workspace-label">REDAKTION</div>
+    <nav aria-label="Hauptnavigation">
+      <button [class.active]="view() === 'dashboard'" (click)="navigate('dashboard')"><span>◫</span><span class="nav-label">Übersicht</span></button>
+      <button [class.active]="view() === 'analytics'" (click)="navigate('analytics')"><span>▥</span><span class="nav-label">Podcast-Daten</span></button>
+      <button [class.active]="view() === 'topics'" (click)="navigate('topics')"><span>⌕</span><span class="nav-label">Themen</span><i>{{ store.topics().length }}</i></button>
+      <button [class.active]="view() === 'research'" (click)="navigate('research')"><span>◉</span><span class="nav-label">Recherche</span></button>
+      <button [class.active]="view() === 'scripts'" (click)="navigate('scripts')"><span>≡</span><span class="nav-label">Skripte</span><i>{{ store.scripts().length }}</i></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-status"><span></span> Lokale Arbeitsumgebung</div>
+      <button [class.active]="view() === 'settings'" (click)="navigate('settings')"><span>⚙</span><span class="nav-label">Einstellungen</span></button>
+      <small>INSIDE VERBRECHEN · STUDIO</small>
+    </div>
+  </aside>
 
-<style>
-  :host {
-    --bright-blue: oklch(51.01% 0.274 263.83);
-    --electric-violet: oklch(53.18% 0.28 296.97);
-    --french-violet: oklch(47.66% 0.246 305.88);
-    --vivid-pink: oklch(69.02% 0.277 332.77);
-    --hot-red: oklch(61.42% 0.238 15.34);
-    --orange-red: oklch(63.32% 0.24 31.68);
+  <main class="main-area">
+    <router-outlet />
+    <header class="topbar">
+      <div><span class="eyebrow">PODCAST REDAKTION</span><span class="crumb"> / {{ view() === 'dashboard' ? 'Übersicht' : view() === 'analytics' ? 'Podcast-Daten' : view() === 'topics' ? 'Themen' : view() === 'research' ? 'Recherche' : view() === 'scripts' ? 'Skripte' : 'Einstellungen' }}</span></div>
+      <div class="top-actions"><span class="status-pill"><span></span> Privat</span><div class="avatar">IV</div></div>
+    </header>
 
-    --gray-900: oklch(19.37% 0.006 300.98);
-    --gray-700: oklch(36.98% 0.014 302.71);
-    --gray-400: oklch(70.9% 0.015 304.04);
+    @if (notice()) { <div class="notice" role="status"><span>i</span>{{ notice() }}<button (click)="notice.set('')" aria-label="Meldung schließen">×</button></div> }
+    @if (busy()) { <div class="loading-banner" role="status" aria-live="polite"><span class="loading-spinner"></span><div><strong>{{ loadingMessage() }}</strong><small>Das kann je nach Recherche etwas dauern. Bitte lass diese Seite geöffnet.</small></div></div> }
 
-    --red-to-pink-to-purple-vertical-gradient: linear-gradient(
-      180deg,
-      var(--orange-red) 0%,
-      var(--vivid-pink) 50%,
-      var(--electric-violet) 100%
-    );
-
-    --red-to-pink-to-purple-horizontal-gradient: linear-gradient(
-      90deg,
-      var(--orange-red) 0%,
-      var(--vivid-pink) 50%,
-      var(--electric-violet) 100%
-    );
-
-    --pill-accent: var(--bright-blue);
-
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol";
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    display: block;
-    height: 100dvh;
-  }
-
-  h1 {
-    font-size: 3.125rem;
-    color: var(--gray-900);
-    font-weight: 500;
-    line-height: 100%;
-    letter-spacing: -0.125rem;
-    margin: 0;
-    font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol";
-  }
-
-  p {
-    margin: 0;
-    color: var(--gray-700);
-  }
-
-  main {
-    width: 100%;
-    min-height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1rem;
-    box-sizing: inherit;
-    position: relative;
-  }
-
-  .angular-logo {
-    max-width: 9.2rem;
-  }
-
-  .content {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    max-width: 700px;
-    margin-bottom: 3rem;
-  }
-
-  .content h1 {
-    margin-top: 1.75rem;
-  }
-
-  .content p {
-    margin-top: 1.5rem;
-  }
-
-  .divider {
-    width: 1px;
-    background: var(--red-to-pink-to-purple-vertical-gradient);
-    margin-inline: 0.5rem;
-  }
-
-  .pill-group {
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-  }
-
-  .pill {
-    display: flex;
-    align-items: center;
-    --pill-accent: var(--bright-blue);
-    background: color-mix(in srgb, var(--pill-accent) 5%, transparent);
-    color: var(--pill-accent);
-    padding-inline: 0.75rem;
-    padding-block: 0.375rem;
-    border-radius: 2.75rem;
-    border: 0;
-    transition: background 0.3s ease;
-    font-family: var(--inter-font);
-    font-size: 0.875rem;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 1.4rem;
-    letter-spacing: -0.00875rem;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .pill:hover {
-    background: color-mix(in srgb, var(--pill-accent) 15%, transparent);
-  }
-
-  .pill-group .pill:nth-child(6n + 1) {
-    --pill-accent: var(--bright-blue);
-  }
-  .pill-group .pill:nth-child(6n + 2) {
-    --pill-accent: var(--electric-violet);
-  }
-  .pill-group .pill:nth-child(6n + 3) {
-    --pill-accent: var(--french-violet);
-  }
-
-  .pill-group .pill:nth-child(6n + 4),
-  .pill-group .pill:nth-child(6n + 5),
-  .pill-group .pill:nth-child(6n + 6) {
-    --pill-accent: var(--hot-red);
-  }
-
-  .pill-group svg {
-    margin-inline-start: 0.25rem;
-  }
-
-  .social-links {
-    display: flex;
-    align-items: center;
-    gap: 0.73rem;
-    margin-top: 1.5rem;
-  }
-
-  .social-links path {
-    transition: fill 0.3s ease;
-    fill: var(--gray-400);
-  }
-
-  .social-links a:hover svg path {
-    fill: var(--gray-900);
-  }
-
-  @media screen and (max-width: 650px) {
-    .content {
-      flex-direction: column;
-      width: max-content;
+    @if (view() === 'dashboard') {
+      <section class="page">
+        <div class="welcome-row"><div><span class="eyebrow red">REDAKTION · {{ 'HEUTE' }}</span><h1>Guten Tag.</h1><p>Dein Arbeitsbereich für Recherche und Skripte.</p></div><button class="button primary" (click)="navigate('topics')"><span>＋</span> Neues Thema</button></div>
+        <div class="stat-grid">
+          <article class="stat-card"><span class="stat-icon">▥</span><span class="stat-label">EPISODEN IN DATENBANK</span><strong>{{ store.metrics().length || '–' }}</strong><small>{{ store.metrics().length ? 'aus importierter Podcast-Statistik' : 'Statistikdatei wird geladen' }}</small></article>
+          <article class="stat-card"><span class="stat-icon">⌕</span><span class="stat-label">THEMEN</span><strong>{{ store.topics().length }}</strong><small>eigene Themenideen</small></article>
+          <article class="stat-card"><span class="stat-icon">◉</span><span class="stat-label">STILREFERENZEN</span><strong>{{ store.transcripts().length }}</strong><small>{{ store.profile() ? 'persönliches Profil verfügbar' : 'sachlicher Standardstil aktiv' }}</small></article>
+          <article class="stat-card"><span class="stat-icon">≡</span><span class="stat-label">SKRIPTENTWÜRFE</span><strong>{{ store.scripts().length }}</strong><small>lokal gespeichert</small></article>
+        </div>
+        <div class="dashboard-grid">
+          <section class="panel performance"><div class="panel-heading"><div><span class="eyebrow">PODCAST ANALYTICS</span><h2>Stärkste Episoden</h2></div><button class="text-button" (click)="navigate('analytics')">Alle Daten <span>↗</span></button></div>
+            @if (topEpisodes().length) { <div class="episode-list">@for (episode of topEpisodes(); track episode.title; let i = $index) { <div class="episode-row"><span class="rank">{{ (i + 1).toString().padStart(2, '0') }}</span><div class="episode-info"><strong>{{ episode.title }}</strong><small>{{ episode.releaseDate || 'Veröffentlichungsdatum fehlt' }}</small></div><div class="plays"><strong>{{ episode.plays }}</strong><small>Plays</small></div><div class="mini-bar"><span [style.width.%]="Math.max(8, episode.plays / topEpisodes()[0].plays * 100)"></span></div></div> }</div> } @else { <p class="empty">Podcast-Daten werden eingelesen oder können unter Podcast-Daten importiert werden.</p> }
+          </section>
+          <section class="panel workflow"><div class="panel-heading"><div><span class="eyebrow">ARBEITSABLAUF</span><h2>Deine Redaktion</h2></div><span class="live-dot"></span></div>
+            <div class="workflow-steps"><button (click)="navigate('analytics')"><b>01</b><span><strong>Daten analysieren</strong><small>CSV und Transkriptdateien importieren</small></span><em>›</em></button><button (click)="navigate('topics')"><b>02</b><span><strong>Thema festlegen</strong><small>Fallideen erfassen und Quellen suchen</small></span><em>›</em></button><button (click)="navigate('research')"><b>03</b><span><strong>Recherche prüfen</strong><small>Fakten und Quellen ergänzen, freigeben</small></span><em>›</em></button><button (click)="navigate('scripts')"><b>04</b><span><strong>Skript ausarbeiten</strong><small>Erstellen, bearbeiten und exportieren</small></span><em>›</em></button></div>
+          </section>
+        </div>
+        <section class="panel integrity"><span class="integrity-icon">✓</span><div><strong>Datenbasis transparent</strong><p>{{ store.metrics().length }} Podcast-Episoden geladen. Fehlende Kennzahlen werden als nicht verfügbar behandelt. Referenztranskripte: {{ store.transcripts().length ? store.transcripts().length : 'noch keine importiert' }}.</p></div><button class="text-button" (click)="navigate('analytics')">Daten prüfen →</button></section>
+      </section>
     }
 
-    .divider {
-      height: 1px;
-      width: 100%;
-      background: var(--red-to-pink-to-purple-horizontal-gradient);
-      margin-block: 1.5rem;
+    @if (view() === 'analytics') {
+      <section class="page"><div class="page-heading"><div><span class="eyebrow red">DATEN & ERZÄHLSTIL</span><h1>Podcast-Daten</h1><p>Importiere Statistiken und Referenztranskripte. Beide Bereiche sind unabhängig voneinander nutzbar.</p></div></div>
+        <div class="two-column">
+          <section class="panel"><div class="panel-heading"><div><span class="eyebrow">01 / PERFORMANCE</span><h2>Podcast-Statistik</h2></div><span class="count-chip">{{ store.metrics().length }} Episoden</span></div>
+            <p class="muted">Vorhandene Datei: <code>data/analytics/2015-05-01_to_2026-10-28.csv</code>. Die Tabelle enthält Titel, Plays, Streams, Audience Size und Veröffentlichungsdatum.</p>
+            <label class="upload-zone"><span class="upload-symbol">↑</span><strong>CSV importieren</strong><small>UTF-8 · Trennzeichen Komma, Semikolon oder Tab</small><input type="file" accept=".csv,text/csv" (change)="importCsv($event)"></label>
+            @if (importErrors().length) { <div class="inline-error">@for (error of importErrors(); track error) { <p>{{ error }}</p> }</div> }
+            <div class="coverage"><strong>Verfügbarkeit und Grenzen</strong>@for (item of metricCoverage(); track item) { <div><span>•</span>{{ item }}</div> }</div>
+            <div class="table-wrap"><table><thead><tr><th>EPISODE</th><th>PLAYS</th><th>STREAMS</th><th>VERÖFFENTLICHT</th></tr></thead><tbody>@for (episode of topEpisodes(); track episode.title) { <tr><td>{{ episode.title }}</td><td>{{ episode.plays }}</td><td>{{ episode.streams || '–' }}</td><td>{{ episode.releaseDate || '–' }}</td></tr> }</tbody></table></div>
+            <p class="footnote">Die Plays sind Gesamtwerte ohne vergleichbare Beobachtungszeiträume. Eine faire Performance-Rangfolge oder thematische Korrelation lässt sich daraus allein nicht ableiten.</p>
+          </section>
+          <section class="panel"><div class="panel-heading"><div><span class="eyebrow">02 / STILANALYSE</span><h2>Inside-Verbrechen-Stilprofil</h2></div><span class="count-chip">{{ store.transcripts().length }} Referenzen</span></div>
+            <p class="muted">TXT- und Markdown-Transkripte können jederzeit ergänzt werden. Nach jedem Import wird das persönliche Profil automatisch neu berechnet.</p>
+            <label class="upload-zone"><span class="upload-symbol">↑</span><strong>Transkripte importieren</strong><small>Mehrere .txt- oder .md-Dateien auswählen</small><input type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" multiple (change)="importTranscripts($event)"></label>
+            @if (store.transcripts().length) { <div class="reference-list">@for (reference of store.transcripts(); track reference.id) { <div><span class="file-icon">TXT</span><span><strong>{{ reference.name }}</strong><small>{{ reference.text.length.toLocaleString('de-DE') }} Zeichen</small></span><button class="text-button" (click)="deleteTranscript(reference)">Löschen</button></div> }</div> }
+            @if (store.profile(); as profile) { <div class="profile-box"><div class="profile-top"><strong>Persönliches Profil</strong><button class="text-button" (click)="rebuildProfile()">Neu analysieren ↻</button></div><div class="profile-stats"><span><b>{{ profile.wordCount.toLocaleString('de-DE') }}</b><small>Wörter analysiert</small></span><span><b>{{ profile.averageSentenceWords }}</b><small>Wörter / Satz</small></span><span><b>{{ profile.paragraphCount }}</b><small>Absätze</small></span></div><p>Erstellt aus {{ profile.sourceCount }} Referenzdatei(en). Beispielanfänge stehen dem Skriptgenerator als begrenzte Stilhinweise zur Verfügung; vollständige Absätze werden nicht übernommen.</p></div> } @else { <div class="fallback-box"><span>◌</span><div><strong>Persönliches Stilprofil noch nicht verfügbar</strong><p>Die Skripterstellung verwendet bis dahin den konfigurierbaren sachlichen True-Crime-Erzählstil. Ein späterer Import aktiviert das persönliche Profil automatisch.</p></div></div> }
+          </section>
+        </div>
+      </section>
     }
-  }
-</style>
 
-<main class="main">
-  <div class="content">
-    <div class="left-side">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 982 239"
-        fill="none"
-        class="angular-logo"
-      >
-        <g clip-path="url(#a)">
-          <path
-            fill="url(#b)"
-            d="M388.676 191.625h30.849L363.31 31.828h-35.758l-56.215 159.797h30.848l13.174-39.356h60.061l13.256 39.356Zm-65.461-62.675 21.602-64.311h1.227l21.602 64.311h-44.431Zm126.831-7.527v70.202h-28.23V71.839h27.002v20.374h1.392c2.782-6.71 7.2-12.028 13.255-15.956 6.056-3.927 13.584-5.89 22.503-5.89 8.264 0 15.465 1.8 21.684 5.318 6.137 3.518 10.964 8.673 14.319 15.382 3.437 6.71 5.074 14.81 4.992 24.383v76.175h-28.23v-71.92c0-8.019-2.046-14.237-6.219-18.819-4.173-4.5-9.819-6.791-17.102-6.791-4.91 0-9.328 1.063-13.174 3.272-3.846 2.128-6.792 5.237-9.001 9.328-2.046 4.009-3.191 8.918-3.191 14.728ZM589.233 239c-10.147 0-18.82-1.391-26.103-4.091-7.282-2.7-13.092-6.382-17.511-10.964-4.418-4.582-7.528-9.655-9.164-15.219l25.448-6.136c1.145 2.372 2.782 4.663 4.991 6.954 2.209 2.291 5.155 4.255 8.837 5.81 3.683 1.554 8.428 2.291 14.074 2.291 8.019 0 14.647-1.964 19.884-5.81 5.237-3.845 7.856-10.227 7.856-19.064v-22.665h-1.391c-1.473 2.946-3.601 5.892-6.383 9.001-2.782 3.109-6.464 5.645-10.965 7.691-4.582 2.046-10.228 3.109-17.101 3.109-9.165 0-17.511-2.209-25.039-6.545-7.446-4.337-13.42-10.883-17.757-19.474-4.418-8.673-6.628-19.473-6.628-32.565 0-13.091 2.21-24.301 6.628-33.383 4.419-9.082 10.311-15.955 17.839-20.7 7.528-4.746 15.874-7.037 25.039-7.037 7.037 0 12.846 1.145 17.347 3.518 4.582 2.373 8.182 5.236 10.883 8.51 2.7 3.272 4.746 6.382 6.137 9.327h1.554v-19.8h27.821v121.749c0 10.228-2.454 18.737-7.364 25.447-4.91 6.709-11.538 11.7-20.048 15.055-8.509 3.355-18.165 4.991-28.884 4.991Zm.245-71.266c5.974 0 11.047-1.473 15.302-4.337 4.173-2.945 7.446-7.118 9.573-12.519 2.21-5.482 3.274-12.027 3.274-19.637 0-7.609-1.064-14.155-3.274-19.8-2.127-5.646-5.318-10.064-9.491-13.255-4.174-3.11-9.329-4.746-15.384-4.746s-11.537 1.636-15.792 4.91c-4.173 3.272-7.365 7.772-9.492 13.418-2.128 5.727-3.191 12.191-3.191 19.392 0 7.2 1.063 13.745 3.273 19.228 2.127 5.482 5.318 9.736 9.573 12.764 4.174 3.027 9.41 4.582 15.629 4.582Zm141.56-26.51V71.839h28.23v119.786h-27.412v-21.273h-1.227c-2.7 6.709-7.119 12.191-13.338 16.446-6.137 4.255-13.747 6.382-22.748 6.382-7.855 0-14.81-1.718-20.783-5.237-5.974-3.518-10.72-8.591-14.075-15.382-3.355-6.709-5.073-14.891-5.073-24.464V71.839h28.312v71.921c0 7.609 2.046 13.664 6.219 18.083 4.173 4.5 9.655 6.709 16.365 6.709 4.173 0 8.183-.982 12.111-3.028 3.927-2.045 7.118-5.072 9.655-9.082 2.537-4.091 3.764-9.164 3.764-15.218Zm65.707-109.395v159.796h-28.23V31.828h28.23Zm44.841 162.169c-7.61 0-14.402-1.391-20.457-4.091-6.055-2.7-10.883-6.791-14.32-12.109-3.518-5.319-5.237-11.946-5.237-19.801 0-6.791 1.228-12.355 3.765-16.773 2.536-4.419 5.891-7.937 10.228-10.637 4.337-2.618 9.164-4.664 14.647-6.055 5.4-1.391 11.046-2.373 16.856-3.027 7.037-.737 12.683-1.391 17.102-1.964 4.337-.573 7.528-1.555 9.574-2.782 1.963-1.309 3.027-3.273 3.027-5.973v-.491c0-5.891-1.718-10.391-5.237-13.664-3.518-3.191-8.51-4.828-15.056-4.828-6.955 0-12.356 1.473-16.447 4.5-4.009 3.028-6.71 6.546-8.183 10.719l-26.348-3.764c2.046-7.282 5.483-13.336 10.31-18.328 4.746-4.909 10.638-8.59 17.511-11.045 6.955-2.455 14.565-3.682 22.912-3.682 5.809 0 11.537.654 17.265 2.045s10.965 3.6 15.711 6.71c4.746 3.109 8.51 7.282 11.455 12.6 2.864 5.318 4.337 11.946 4.337 19.883v80.184h-27.166v-16.446h-.9c-1.719 3.355-4.092 6.464-7.201 9.328-3.109 2.864-6.955 5.237-11.619 6.955-4.828 1.718-10.229 2.536-16.529 2.536Zm7.364-20.701c5.646 0 10.556-1.145 14.729-3.354 4.173-2.291 7.364-5.237 9.655-9.001 2.292-3.763 3.355-7.854 3.355-12.273v-14.155c-.9.737-2.373 1.391-4.5 2.046-2.128.654-4.419 1.145-7.037 1.636-2.619.491-5.155.9-7.692 1.227-2.537.328-4.746.655-6.628.901-4.173.572-8.019 1.472-11.292 2.781-3.355 1.31-5.973 3.11-7.855 5.401-1.964 2.291-2.864 5.318-2.864 8.918 0 5.237 1.882 9.164 5.728 11.782 3.682 2.782 8.51 4.091 14.401 4.091Zm64.643 18.328V71.839h27.412v19.965h1.227c2.21-6.955 5.974-12.274 11.292-16.038 5.319-3.763 11.456-5.645 18.329-5.645 1.555 0 3.355.082 5.237.163 1.964.164 3.601.328 4.91.573v25.938c-1.227-.41-3.109-.819-5.646-1.146a58.814 58.814 0 0 0-7.446-.49c-5.155 0-9.738 1.145-13.829 3.354-4.091 2.209-7.282 5.236-9.655 9.164-2.373 3.927-3.519 8.427-3.519 13.5v70.448h-28.312ZM222.077 39.192l-8.019 125.923L137.387 0l84.69 39.192Zm-53.105 162.825-57.933 33.056-57.934-33.056 11.783-28.556h92.301l11.783 28.556ZM111.039 62.675l30.357 73.803H80.681l30.358-73.803ZM7.937 165.115 0 39.192 84.69 0 7.937 165.115Z"
-          />
-          <path
-            fill="url(#c)"
-            d="M388.676 191.625h30.849L363.31 31.828h-35.758l-56.215 159.797h30.848l13.174-39.356h60.061l13.256 39.356Zm-65.461-62.675 21.602-64.311h1.227l21.602 64.311h-44.431Zm126.831-7.527v70.202h-28.23V71.839h27.002v20.374h1.392c2.782-6.71 7.2-12.028 13.255-15.956 6.056-3.927 13.584-5.89 22.503-5.89 8.264 0 15.465 1.8 21.684 5.318 6.137 3.518 10.964 8.673 14.319 15.382 3.437 6.71 5.074 14.81 4.992 24.383v76.175h-28.23v-71.92c0-8.019-2.046-14.237-6.219-18.819-4.173-4.5-9.819-6.791-17.102-6.791-4.91 0-9.328 1.063-13.174 3.272-3.846 2.128-6.792 5.237-9.001 9.328-2.046 4.009-3.191 8.918-3.191 14.728ZM589.233 239c-10.147 0-18.82-1.391-26.103-4.091-7.282-2.7-13.092-6.382-17.511-10.964-4.418-4.582-7.528-9.655-9.164-15.219l25.448-6.136c1.145 2.372 2.782 4.663 4.991 6.954 2.209 2.291 5.155 4.255 8.837 5.81 3.683 1.554 8.428 2.291 14.074 2.291 8.019 0 14.647-1.964 19.884-5.81 5.237-3.845 7.856-10.227 7.856-19.064v-22.665h-1.391c-1.473 2.946-3.601 5.892-6.383 9.001-2.782 3.109-6.464 5.645-10.965 7.691-4.582 2.046-10.228 3.109-17.101 3.109-9.165 0-17.511-2.209-25.039-6.545-7.446-4.337-13.42-10.883-17.757-19.474-4.418-8.673-6.628-19.473-6.628-32.565 0-13.091 2.21-24.301 6.628-33.383 4.419-9.082 10.311-15.955 17.839-20.7 7.528-4.746 15.874-7.037 25.039-7.037 7.037 0 12.846 1.145 17.347 3.518 4.582 2.373 8.182 5.236 10.883 8.51 2.7 3.272 4.746 6.382 6.137 9.327h1.554v-19.8h27.821v121.749c0 10.228-2.454 18.737-7.364 25.447-4.91 6.709-11.538 11.7-20.048 15.055-8.509 3.355-18.165 4.991-28.884 4.991Zm.245-71.266c5.974 0 11.047-1.473 15.302-4.337 4.173-2.945 7.446-7.118 9.573-12.519 2.21-5.482 3.274-12.027 3.274-19.637 0-7.609-1.064-14.155-3.274-19.8-2.127-5.646-5.318-10.064-9.491-13.255-4.174-3.11-9.329-4.746-15.384-4.746s-11.537 1.636-15.792 4.91c-4.173 3.272-7.365 7.772-9.492 13.418-2.128 5.727-3.191 12.191-3.191 19.392 0 7.2 1.063 13.745 3.273 19.228 2.127 5.482 5.318 9.736 9.573 12.764 4.174 3.027 9.41 4.582 15.629 4.582Zm141.56-26.51V71.839h28.23v119.786h-27.412v-21.273h-1.227c-2.7 6.709-7.119 12.191-13.338 16.446-6.137 4.255-13.747 6.382-22.748 6.382-7.855 0-14.81-1.718-20.783-5.237-5.974-3.518-10.72-8.591-14.075-15.382-3.355-6.709-5.073-14.891-5.073-24.464V71.839h28.312v71.921c0 7.609 2.046 13.664 6.219 18.083 4.173 4.5 9.655 6.709 16.365 6.709 4.173 0 8.183-.982 12.111-3.028 3.927-2.045 7.118-5.072 9.655-9.082 2.537-4.091 3.764-9.164 3.764-15.218Zm65.707-109.395v159.796h-28.23V31.828h28.23Zm44.841 162.169c-7.61 0-14.402-1.391-20.457-4.091-6.055-2.7-10.883-6.791-14.32-12.109-3.518-5.319-5.237-11.946-5.237-19.801 0-6.791 1.228-12.355 3.765-16.773 2.536-4.419 5.891-7.937 10.228-10.637 4.337-2.618 9.164-4.664 14.647-6.055 5.4-1.391 11.046-2.373 16.856-3.027 7.037-.737 12.683-1.391 17.102-1.964 4.337-.573 7.528-1.555 9.574-2.782 1.963-1.309 3.027-3.273 3.027-5.973v-.491c0-5.891-1.718-10.391-5.237-13.664-3.518-3.191-8.51-4.828-15.056-4.828-6.955 0-12.356 1.473-16.447 4.5-4.009 3.028-6.71 6.546-8.183 10.719l-26.348-3.764c2.046-7.282 5.483-13.336 10.31-18.328 4.746-4.909 10.638-8.59 17.511-11.045 6.955-2.455 14.565-3.682 22.912-3.682 5.809 0 11.537.654 17.265 2.045s10.965 3.6 15.711 6.71c4.746 3.109 8.51 7.282 11.455 12.6 2.864 5.318 4.337 11.946 4.337 19.883v80.184h-27.166v-16.446h-.9c-1.719 3.355-4.092 6.464-7.201 9.328-3.109 2.864-6.955 5.237-11.619 6.955-4.828 1.718-10.229 2.536-16.529 2.536Zm7.364-20.701c5.646 0 10.556-1.145 14.729-3.354 4.173-2.291 7.364-5.237 9.655-9.001 2.292-3.763 3.355-7.854 3.355-12.273v-14.155c-.9.737-2.373 1.391-4.5 2.046-2.128.654-4.419 1.145-7.037 1.636-2.619.491-5.155.9-7.692 1.227-2.537.328-4.746.655-6.628.901-4.173.572-8.019 1.472-11.292 2.781-3.355 1.31-5.973 3.11-7.855 5.401-1.964 2.291-2.864 5.318-2.864 8.918 0 5.237 1.882 9.164 5.728 11.782 3.682 2.782 8.51 4.091 14.401 4.091Zm64.643 18.328V71.839h27.412v19.965h1.227c2.21-6.955 5.974-12.274 11.292-16.038 5.319-3.763 11.456-5.645 18.329-5.645 1.555 0 3.355.082 5.237.163 1.964.164 3.601.328 4.91.573v25.938c-1.227-.41-3.109-.819-5.646-1.146a58.814 58.814 0 0 0-7.446-.49c-5.155 0-9.738 1.145-13.829 3.354-4.091 2.209-7.282 5.236-9.655 9.164-2.373 3.927-3.519 8.427-3.519 13.5v70.448h-28.312ZM222.077 39.192l-8.019 125.923L137.387 0l84.69 39.192Zm-53.105 162.825-57.933 33.056-57.934-33.056 11.783-28.556h92.301l11.783 28.556ZM111.039 62.675l30.357 73.803H80.681l30.358-73.803ZM7.937 165.115 0 39.192 84.69 0 7.937 165.115Z"
-          />
-        </g>
-        <defs>
-          <radialGradient
-            id="c"
-            cx="0"
-            cy="0"
-            r="1"
-            gradientTransform="rotate(118.122 171.182 60.81) scale(205.794)"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#FF41F8" />
-            <stop offset=".707" stop-color="#FF41F8" stop-opacity=".5" />
-            <stop offset="1" stop-color="#FF41F8" stop-opacity="0" />
-          </radialGradient>
-          <linearGradient
-            id="b"
-            x1="0"
-            x2="982"
-            y1="192"
-            y2="192"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#F0060B" />
-            <stop offset="0" stop-color="#F0070C" />
-            <stop offset=".526" stop-color="#CC26D5" />
-            <stop offset="1" stop-color="#7702FF" />
-          </linearGradient>
-          <clipPath id="a"><path fill="#fff" d="M0 0h982v239H0z" /></clipPath>
-        </defs>
-      </svg>
-      <h1>Hello, {{ title() }}</h1>
-      <p>Congratulations! Your app is running. 🎉</p>
-    </div>
-    <div class="divider" role="separator" aria-label="Divider"></div>
-    <div class="right-side">
-      <div class="pill-group">
-        @for (item of [
-          { title: 'Explore the Docs', link: 'https://angular.dev' },
-          { title: 'Learn with Tutorials', link: 'https://angular.dev/tutorials' },
-          { title: 'Prompt and best practices for AI', link: 'https://angular.dev/ai/develop-with-ai'},
-          { title: 'CLI Docs', link: 'https://angular.dev/tools/cli' },
-          { title: 'Angular Language Service', link: 'https://angular.dev/tools/language-service' },
-          { title: 'Angular DevTools', link: 'https://angular.dev/tools/devtools' },
-        ]; track item.title) {
-          <a
-            class="pill"
-            [href]="item.link"
-            target="_blank"
-            rel="noopener"
-          >
-            <span>{{ item.title }}</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="14"
-              viewBox="0 -960 960 960"
-              width="14"
-              fill="currentColor"
-            >
-              <path
-                d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z"
-              />
-            </svg>
-          </a>
-        }
-      </div>
-      <div class="social-links">
-        <a
-          href="https://github.com/angular/angular"
-          aria-label="Github"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="25"
-            height="24"
-            viewBox="0 0 25 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="Github"
-          >
-            <path
-              d="M12.3047 0C5.50634 0 0 5.50942 0 12.3047C0 17.7423 3.52529 22.3535 8.41332 23.9787C9.02856 24.0946 9.25414 23.7142 9.25414 23.3871C9.25414 23.0949 9.24389 22.3207 9.23876 21.2953C5.81601 22.0377 5.09414 19.6444 5.09414 19.6444C4.53427 18.2243 3.72524 17.8449 3.72524 17.8449C2.61064 17.082 3.81137 17.0973 3.81137 17.0973C5.04697 17.1835 5.69604 18.3647 5.69604 18.3647C6.79321 20.2463 8.57636 19.7029 9.27978 19.3881C9.39052 18.5924 9.70736 18.0499 10.0591 17.7423C7.32641 17.4347 4.45429 16.3765 4.45429 11.6618C4.45429 10.3185 4.9311 9.22133 5.72065 8.36C5.58222 8.04931 5.16694 6.79833 5.82831 5.10337C5.82831 5.10337 6.85883 4.77319 9.2121 6.36459C10.1965 6.09082 11.2424 5.95546 12.2883 5.94931C13.3342 5.95546 14.3801 6.09082 15.3644 6.36459C17.7023 4.77319 18.7328 5.10337 18.7328 5.10337C19.3942 6.79833 18.9789 8.04931 18.8559 8.36C19.6403 9.22133 20.1171 10.3185 20.1171 11.6618C20.1171 16.3888 17.2409 17.4296 14.5031 17.7321C14.9338 18.1012 15.3337 18.8559 15.3337 20.0084C15.3337 21.6552 15.3183 22.978 15.3183 23.3779C15.3183 23.7009 15.5336 24.0854 16.1642 23.9623C21.0871 22.3484 24.6094 17.7341 24.6094 12.3047C24.6094 5.50942 19.0999 0 12.3047 0Z"
-            />
-          </svg>
-        </a>
-        <a
-          href="https://x.com/angular"
-          aria-label="X"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="X"
-          >
-            <path
-              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-            />
-          </svg>
-        </a>
-        <a
-          href="https://www.youtube.com/channel/UCbn1OgGei-DV7aSRo_HaAiw"
-          aria-label="Youtube"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="29"
-            height="20"
-            viewBox="0 0 29 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="Youtube"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M27.4896 1.52422C27.9301 1.96749 28.2463 2.51866 28.4068 3.12258C29.0004 5.35161 29.0004 10 29.0004 10C29.0004 10 29.0004 14.6484 28.4068 16.8774C28.2463 17.4813 27.9301 18.0325 27.4896 18.4758C27.0492 18.9191 26.5 19.2389 25.8972 19.4032C23.6778 20 14.8068 20 14.8068 20C14.8068 20 5.93586 20 3.71651 19.4032C3.11363 19.2389 2.56449 18.9191 2.12405 18.4758C1.68361 18.0325 1.36732 17.4813 1.20683 16.8774C0.613281 14.6484 0.613281 10 0.613281 10C0.613281 10 0.613281 5.35161 1.20683 3.12258C1.36732 2.51866 1.68361 1.96749 2.12405 1.52422C2.56449 1.08095 3.11363 0.76113 3.71651 0.596774C5.93586 0 14.8068 0 14.8068 0C14.8068 0 23.6778 0 25.8972 0.596774C26.5 0.76113 27.0492 1.08095 27.4896 1.52422ZM19.3229 10L11.9036 5.77905V14.221L19.3229 10Z"
-            />
-          </svg>
-        </a>
-      </div>
-    </div>
-  </div>
-</main>
+    @if (view() === 'topics') {
+      <section class="page"><div class="page-heading"><div><span class="eyebrow red">FALLIDEEN</span><h1>Themen</h1><p>Erfasse Fälle, bewerte die Datenlage transparent und starte die Recherche mit echten Quellen.</p></div></div>
+        <div class="two-column topic-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">NEUE FALLIDEE</span><h2>{{ topicSuggestion() ? 'Einzelvorschlag prüfen' : 'Thema anlegen' }}</h2></div><button class="button secondary" [disabled]="busy() || topicSuggestion() || !!editingTopic()" (click)="suggestTopics()">{{ busyAction() === 'topics' ? 'Vorschlag wird gesucht …' : 'Einen KI-Vorschlag holen' }}</button></div><p class="muted">Pro Anfrage ein Fall. Werte und Quellen kannst du vor dem Speichern bearbeiten; Quellen bleiben zunächst ungeprüft.</p>
+          @if (topicSuggestion()) { <div class="score-note">Ein Vorschlag · {{ suggestedSources().length }} Quellenhinweis(e), redaktionell zu prüfen. Fehlende Podcast-Metadaten werden nicht ergänzt.</div> }
+          <form class="topic-form" (ngSubmit)="addTopic()"><label>Fallname<input name="title" [(ngModel)]="topicForm.title" required placeholder="Name des Falls"></label><div class="form-row"><label>Land<input name="country" [(ngModel)]="topicForm.country" placeholder="z. B. Deutschland"></label><label>Zeitraum<input name="period" [(ngModel)]="topicForm.period" placeholder="z. B. 1980–1982"></label></div><label>Kategorie<input name="category" [(ngModel)]="topicForm.category" placeholder="Nur wenn bekannt"></label><label>Kurzbeschreibung<textarea name="summary" [(ngModel)]="topicForm.summary" rows="3" placeholder="Eigene Notizen; Fakten später mit Quellen belegen"></textarea></label><div class="topic-form-actions">@if (topicSuggestion()) { <button class="button secondary" type="button" (click)="discardTopicSuggestion()">Vorschlag verwerfen</button> }<button class="button primary" type="submit">{{ editingTopic() ? 'Änderungen speichern' : topicSuggestion() ? 'Thema speichern' : 'Thema speichern' }} <span>＋</span></button></div></form>
+        </section><section class="topic-list"><div class="panel-heading list-heading"><div><span class="eyebrow">DEINE THEMEN</span><h2>{{ store.topics().length }} Fälle</h2></div><span class="count-chip">Manuelle Recherche</span></div>
+          @for (topic of store.topics(); track topic.id) { <article class="topic-card"><div class="topic-title"><div><span class="eyebrow">{{ topic.category || 'FALLIDEe' }}{{ topic.country ? ' · ' + topic.country : '' }}{{ topic.period ? ' · ' + topic.period : '' }}</span><h3>{{ topic.title }}</h3></div><div class="score"><strong>{{ topic.score }}</strong><small>/ 100*</small></div></div><p>{{ topic.summary || 'Keine Zusammenfassung eingetragen.' }}</p><div class="score-note">{{ topic.scoreNote }}</div><div class="topic-actions"><button class="button secondary" (click)="searchWeb(topic)">Quellen im Web suchen ↗</button><button class="text-button" (click)="editTopic(topic)">Bearbeiten</button><button class="text-button" (click)="deleteTopic(topic)">Löschen</button><button class="text-button" (click)="openDossier(topic.id)">Dossier öffnen →</button></div></article> } @empty { <div class="empty-panel"><span>⌕</span><strong>Noch keine Themen angelegt</strong><p>Trage einen Fall ein, um ein Dossier anzulegen.</p></div> }
+          <p class="footnote">* Orientierungswert mit neutralen Annahmen, keine statistisch belegte Erfolgsprognose. Die vorhandene Podcast-CSV enthält keine Themenlabels, Quellenbewertung oder Episodenlängen.</p>
+        </section></div>
+      </section>
+    }
 
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content above * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced.  * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * End of Placeholder  * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+    @if (view() === 'research') {
+      <section class="page"><div class="page-heading"><div><span class="eyebrow red">QUELLEN & FAKTEN</span><h1>Recherche-Dossier</h1><p>Trage belegte Aussagen und die zugehörigen Fundstellen ein. Die Prüfung und Freigabe bleiben redaktionelle Aufgaben.</p></div></div>
+        @if (currentDossier(); as dossier) { <section class="panel research-panel"><div class="panel-heading"><div><span class="eyebrow">QUELLENPRÜFUNG · {{ currentSources().length }} QUELLEN</span><h2>{{ dossier.title }}</h2></div><div class="research-actions"><span class="status-tag" [class.approved]="dossier.approved">{{ dossier.approved ? 'Freigegeben' : 'Prüfung offen' }}</span><button class="button secondary" [disabled]="busy()" (click)="researchDossier(dossier)">{{ busyAction() === 'research' ? 'Recherche läuft …' : 'KI-Recherche ergänzen' }}</button></div></div>
+          <div class="source-workspace">
+            <aside class="source-rail"><div class="source-rail-head"><strong>Quellen</strong><button class="icon-button" aria-label="Quelle hinzufügen" (click)="addSource()">＋</button></div>
+              @for (source of currentSources(); track source.id) { <button class="source-item" [class.selected]="selectedSourceId() === source.id" (click)="selectSource(source)"><span class="source-status" [class]="'source-status ' + source.status"></span><span class="source-item-copy"><strong>{{ source.title || 'Neue Quelle' }}</strong><small>{{ source.publisher || 'Herkunft offen' }}</small></span></button> }
+              @if (!currentSources().length) { <p class="source-empty">Noch keine Quellen. Füge eine Quelle hinzu oder starte eine KI-Recherche.</p> }
+            </aside>
+            <section class="source-detail"><div class="source-detail-head"><div><span class="eyebrow">QUELLENDETAILS</span><h3>{{ sourceDraft.title || 'Quelle auswählen' }}</h3></div>@if (selectedSourceId()) { <button class="text-button danger-text" (click)="deleteSelectedSource()">Entfernen</button> }</div>
+              <label>Titel<input [(ngModel)]="sourceDraft.title" placeholder="Dokument- oder Artikeltitel"></label>
+              <div class="source-form-row"><label>Herausgeber / Herkunft<input [(ngModel)]="sourceDraft.publisher" placeholder="z. B. Gericht, Archiv, Medium"></label><label>Prüfstatus<select [(ngModel)]="sourceDraft.status"><option value="unreviewed">Noch nicht geprüft</option><option value="supports">Stützt Aussage</option><option value="contradicts">Widerspricht Aussage</option><option value="context">Kontextquelle</option></select></label></div>
+              <label>URL<input [(ngModel)]="sourceDraft.url" placeholder="https://…"></label>
+              <div class="source-form-row"><label>Konkrete Fundstelle<input [(ngModel)]="sourceDraft.pinpoint" placeholder="Seite, Absatz, Zeitstempel"></label><label>Abrufdatum<input type="date" [(ngModel)]="sourceDraft.retrievedAt"></label></div>
+              <label>Belegauszug / redaktionelle Notiz<textarea rows="4" [(ngModel)]="sourceDraft.note" placeholder="Was belegt diese Quelle konkret? Was bleibt offen?"></textarea></label>
+              <button class="button secondary" [disabled]="!selectedSourceId()" (click)="saveSource()">Quelle speichern</button>
+            </section>
+            <aside class="claim-rail"><div class="source-rail-head"><strong>Zugehörige Aussagen</strong></div><p class="claim-help">Wähle die Aussagen, auf die sich die ausgewählte Quelle bezieht.</p>
+              @for (claim of claims(); track claim) { <label class="claim-link"><input type="checkbox" [checked]="claimLinked(claim)" [disabled]="!selectedSourceId()" (change)="toggleClaim(claim)"><span>{{ claim }}</span></label> }
+              @if (!claims().length) { <p class="source-empty">Noch keine Aussagen eingetragen.</p> }
+              <details class="claims-editor"><summary>Aussagen bearbeiten</summary><textarea rows="7" [(ngModel)]="dossierForm.facts" placeholder="Eine Aussage pro Zeile. Unsicherheiten offen markieren."></textarea></details>
+            </aside>
+          </div>
+          <details class="editorial-notes"><summary>Offene Fragen und KI-Recherche-Notizen</summary><textarea rows="7" [(ngModel)]="dossierForm.notes" placeholder="KI-Ausgabe bleibt ein Rechercheentwurf und muss redaktionell geprüft werden."></textarea></details>
+          <div class="form-actions"><button class="button secondary" (click)="deleteDossier(dossier)">Dossier löschen</button><button class="button secondary" (click)="saveDossier()">Dossier speichern</button><button class="button primary" (click)="saveDossier(true)">Als geprüft freigeben</button></div>
+          @if (dossier.approved) { <div class="approval-footer"><span>✓ Redaktionsfreigabe erteilt</span><button class="button primary" (click)="generateScript(dossier)">Skriptentwurf erstellen →</button></div> }
+        </section> } @else { <div class="empty-panel"><span>◉</span><strong>Wähle ein Thema aus</strong><p>Lege zuerst einen Fall unter Themen an oder öffne ein vorhandenes Dossier.</p><button class="button secondary" (click)="navigate('topics')">Zu Themen →</button></div><div class="dossier-list">@for (dossier of store.dossiers(); track dossier.id) { <button class="dossier-row" (click)="openDossier(dossier.topicId)"><span class="status-tag" [class.approved]="dossier.approved">{{ dossier.approved ? 'Freigegeben' : 'Offen' }}</span><strong>{{ dossier.title }}</strong><span>›</span></button> }</div> }
+      </section>
+    }
 
+    @if (view() === 'scripts') {
+      <section class="page"><div class="page-heading"><div><span class="eyebrow red">SCHREIBTISCH</span><h1>Skripte</h1><p>Entwürfe werden lokal gespeichert. Prüfe jede Aussage anhand der Originalquellen.</p></div></div>
+        @if (currentScript(); as script) { <div class="editor-layout"><aside class="panel script-list"><span class="eyebrow">GESPEICHERTE ENTWÜRFE</span>@for (item of store.scripts(); track item.id) { <button [class.selected]="item.id === script.id" (click)="activeScript.set(item.id)"><strong>{{ item.title }}</strong><small>{{ item.updatedAt | date:'dd.MM.yyyy HH:mm' }}</small></button> }</aside><section class="panel editor-panel"><div class="editor-head"><div><span class="eyebrow">SKRIPTENTWURF</span><h2>{{ script.title }}</h2></div><div class="export-actions"><button class="button secondary" (click)="downloadScript('md')">↓ Markdown</button><button class="button secondary" (click)="downloadScript('txt')">↓ TXT</button><button class="button danger" (click)="deleteScript(script)">Skript löschen</button></div></div><div class="editor-meta"><span>{{ words() }} Wörter</span><span>ca. {{ estimatedMinutes() }} Min. bei {{ store.settings().wordsPerMinute }} Wörtern/Min.</span><span class="status-tag">Faktenprüfung ausstehend</span></div><textarea class="script-editor" [ngModel]="script.text" (ngModelChange)="updateScript($event)" aria-label="Skripttext bearbeiten"></textarea><button class="button secondary" [disabled]="busy()" (click)="auditScript(script)">KI-Fakten-Audit</button>@if (aiDraft()) { <div class="ai-result"><strong>Prüfbericht</strong><pre>{{ aiDraft() }}</pre>@for (citation of lastCitations(); track citation.url) { <a [href]="citation.url" target="_blank" rel="noopener">{{ citation.title || citation.url }}</a> }</div> }<div class="audit-note"><strong>Prüfhinweis</strong><p>KI-Ergebnisse sind Hinweise und ersetzen keine Prüfung der Originalquellen.</p></div></section></div> } @else { <div class="empty-panel"><span>≡</span><strong>Noch keine Skripte</strong><p>Ein Skript lässt sich aus einem redaktionell freigegebenen Dossier mit Fakten und Quellen erstellen.</p><button class="button secondary" (click)="navigate('research')">Zur Recherche →</button></div> }
+      </section>
+    }
 
-<router-outlet />
+    @if (view() === 'settings') {
+      <section class="page"><div class="page-heading"><div><span class="eyebrow red">KONFIGURATION</span><h1>Einstellungen</h1><p>Lege den sachlichen Erzählstil und die Schätzgrundlage für die Sprechdauer fest.</p></div></div><section class="panel settings-panel"><span class="eyebrow">STANDARD-ERZÄHLSTIL</span><h2>Sachlicher True-Crime-Stil</h2><p class="muted">Wird verwendet, bis persönliche Referenztranskripte importiert und analysiert wurden. Stilhinweise ersetzen keine Faktenprüfung.</p><label>Erzählvorgabe<textarea #style rows="5" [value]="store.settings().neutralStyle"></textarea></label><label>Sprechgeschwindigkeit (Wörter pro Minute)<input #speed type="number" min="80" max="220" [value]="store.settings().wordsPerMinute"></label><button class="button primary" (click)="updateSettings(style.value, +speed.value)">Einstellungen speichern</button><div class="api-setup"><label>Lokales API-Token aus .env<input #localToken type="password" autocomplete="off" placeholder="LOCAL_API_TOKEN"></label><button class="button secondary" (click)="saveLocalToken(localToken.value)">Backend verbinden</button>@if (backendHealth(); as health) { <p>Backend verbunden · Key {{ health.configured ? 'eingerichtet' : 'fehlt noch in .env' }} · Preise für {{ health.configuredRateTasks }}/4 Modellgruppen · Websuche {{ health.searchConfigured ? 'konfiguriert' : 'ohne Preis' }} (max. {{ health.maxWebSearchCallsPerJob }}/Job) · Ausgaben {{ health.monthlySpendUsd | number:'1.2-2' }} / {{ health.budgetUsd }} USD · Limit {{ health.maxConcurrentJobs }} paralleler Job(s)</p> }</div><div class="fallback-box"><span>i</span><div><strong>KI-Funktionen benötigen .env und Backend</strong><p>Import, lokale Statistik, Stilprofil, manuelle Recherche-Notizen, Freigabeschritt und Skriptentwurf funktionieren ohne API-Schlüssel. Automatische Fallrecherche, KI-Bewertung und faktenbasierter Audit sind noch nicht eingerichtet.</p></div></div><div class="privacy-note">Daten werden in diesem Browser auf diesem Gerät gespeichert. Browserdaten löschen entfernt lokale Entwürfe und Imports.</div></section></section>
+    }
+  </main>
+</div>

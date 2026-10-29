@@ -1,59 +1,58 @@
-# InsideVerbrechen
+# Inside Verbrechen – Redaktionsstudio
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
+Lokales Angular-21-MVP für Podcast-Analytics, Transkriptimport, Stilprofil, Themenverwaltung, Recherche-Dossiers und Skriptentwürfe.
 
-## Development server
+## Start
 
-To start a local development server, run:
+Voraussetzungen: Node.js 20.19+ oder 22.12+ und npm.
 
-```bash
-ng serve
+```powershell
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Die App läuft unter `http://localhost:4200`. Der vorhandene Datensatz wird beim Start aus `public/assets/analytics.csv` geladen. Die Quelldatei liegt unter `data/analytics/2015-05-01_to_2026-10-28.csv`.
 
-## Code scaffolding
+## Datenimport
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Unter **Podcast-Daten** kann eine eigene CSV mit Titelspalte (`name`, `title`, `episodentitel` oder `titel`) importiert werden. Titel, Plays/Downloads, Streams, Audience Size und Datum werden soweit vorhanden erkannt. Komma, Semikolon und Tabulator werden unterstützt. Beim Import ersetzt der neue Datensatz die aktuell geladene Tabelle.
 
-```bash
-ng generate component component-name
+TXT- und Markdown-Transkripte können mehrfach und auch nachträglich importiert werden. Das Stilprofil wird nach jedem Import automatisch aus den vorhandenen, mindestens 80 Zeichen langen Texten neu erstellt. Ein manuelles Neu-Analysieren ist ebenfalls möglich. Ohne Referenztranskripte wird der konfigurierbare sachliche Standardstil verwendet.
+
+## Datenhaltung und Privatsphäre
+
+Imports, Stilprofil, Themen, Dossiers, Skripte und Einstellungen liegen in `localStorage` dieses Browsers. Die redaktionellen Inhalte bleiben zunächst in localStorage; Backend-Nutzung und Jobs werden lokal in SQLite gespeichert. Das Löschen der Browserdaten entfernt damit auch die lokalen Arbeitsstände. Transkripte und Podcast-Statistiken verlassen den Browser nicht.
+
+## Recherche und KI
+
+Das lokale OpenAI-Backend ist optional; ohne API-Key bleiben manuelle Workflows verfügbar. KI-Vorschläge, Webrecherche, Skriptgenerierung und Fakten-Audit laufen über das Backend, sobald Key und Tokenpreise konfiguriert sind. Eingetragene Fakten und Quellen müssen redaktionell geprüft werden. Eine Dossier-Freigabe ist ein manueller Status und keine automatische Verifikation.
+
+Themen erhalten zunächst einen neutralen Orientierungswert von 50/100. Die vorhandene CSV enthält sieben Episoden mit Titel, Plays, Streams, Audience Size und Veröffentlichungsdatum. Sie enthält keine Themenlabels, Episodenlängen oder vergleichbaren Beobachtungszeiträume. Eingetragene Quell-URLs werden gezählt, aber ihre Qualität wird nicht automatisch beurteilt.
+
+Die Skripterstellung verwendet das freigegebene Dossier und das Stilprofil. KI-Audits liefern Prüfhilfen, keine journalistische Gewissheit.
+
+## Entwicklung und Qualität
+
+```powershell
+npm run build
+npm test -- --watch=false
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Architektur
 
-```bash
-ng generate --help
-```
+- `src/app/app.ts` und `app.html`: Angular-Standalone-Oberfläche und redaktioneller Ablauf.
+- `src/app/workspace.store.ts`: lokale Persistenz, CSV-Parser, Stilprofil-Analyse und transparentes neutrales Scoring.
+- `public/assets/analytics.csv`: beim Start verwendete Kopie der bereitgestellten Statistikdatei.
 
-## Building
+Für öffentliche Bereitstellung sind zusätzliche Authentifizierung und Zugriffsschutz nötig.
 
-To build the project run:
+## Lokales OpenAI-Backend (optional)
 
-```bash
-ng build
-```
+Das Backend läuft nur auf `127.0.0.1:3000`; Angular leitet `/api` über `proxy.conf.json` weiter. Benötigt Node.js 24+ (für die eingebaute SQLite-Unterstützung).
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+1. `Copy-Item .env.example .env`
+2. In `.env` `OPENAI_API_KEY` und ein langes zufälliges `LOCAL_API_TOKEN` setzen.
+3. Die aktuellen Input-/Outputpreise je Modellgruppe aus der OpenAI-Preisseite in `OPENAI_*_USD_PER_MILLION` eintragen. Websuche kostet zusätzlich je 1.000 Suchaufrufe; `WEB_SEARCH_USD_PER_1000_CALLS` ist mit 10 USD vorbelegt und `MAX_WEB_SEARCH_CALLS_PER_JOB` begrenzt die Suchaufrufe. Tokenraten fehlen: KI-Aufträge bleiben dann blockiert.
+4. In zwei Terminals `npm run start:backend` und `npm start` starten. Unter Einstellungen das `LOCAL_API_TOKEN` eintragen und Backend verbinden.
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Themenvorschläge, Webrecherche, Skripterstellung (nur bei freigegebenem Dossier) und Fakten-Audit laufen über die Responses API. Nutzungsdaten und Jobresultate werden in `backend/data/inside-verbrechen.sqlite` gespeichert. Der Key wird nie an Angular ausgeliefert. `.env` ist ignoriert; nur `.env.example` darf versioniert werden. Kein echter API-Key ist für Build oder Tests nötig.
