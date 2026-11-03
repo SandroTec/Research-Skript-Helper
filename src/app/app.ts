@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router } from '@angular/router';
 import { RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
-import { WorkspaceStore, buildStyleProfile, calculateTopicScore, parseCsv, parseTopicSuggestion, type Dossier, type PodcastScript, type ResearchSource, type Topic, type TranscriptReference } from './workspace.store';
+import { WorkspaceStore, buildStyleProfile, calculateTopicScore, parseCsv, parseResearchDraft, parseTopicSuggestion, type Dossier, type DossierClaim, type PodcastScript, type ResearchSource, type Topic, type TranscriptReference } from './workspace.store';
 import { AiApiService, type BackendHealth } from './ai-api.service';
 
 type View = 'dashboard' | 'analytics' | 'topics' | 'research' | 'scripts' | 'settings';
@@ -42,6 +42,7 @@ export class App implements OnInit {
   topicForm = { title: '', country: '', period: '', category: '', summary: '' };
   dossierForm = { facts: '', sources: '', notes: '' };
   sourceDraft: Omit<ResearchSource, 'id' | 'relatedClaims'> = { title: '', publisher: '', url: '', retrievedAt: '', pinpoint: '', status: 'unreviewed', note: '' };
+  claimDraft = '';
 
   ngOnInit(): void {
     this.syncViewFromUrl();
@@ -165,6 +166,16 @@ export class App implements OnInit {
     this.dossierForm = { facts: dossier.facts, sources: dossier.sources, notes: dossier.notes };
     const sources = dossier.sourceRecords?.length ? dossier.sourceRecords : this.parseLegacySources(dossier.sources);
     if (sources.length && !dossier.sourceRecords?.length) this.persistSources(sources);
+    if (!dossier.claims?.length && dossier.facts.trim()) {
+      const now = new Date().toISOString();
+      const legacyClaims = dossier.facts.split(/\r?\n+/).map(line => line.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean).map(text => ({
+        id: crypto.randomUUID(), text,
+        sourceIds: sources.filter(source => source.relatedClaims.includes(text)).map(source => source.id),
+        pinpoint: '', excerpt: '', note: 'Aus einem bestehenden Dossier übernommen; die frühere Zuordnung gilt nicht als Quellenprüfung.',
+        status: 'suggested' as const, origin: 'legacy' as const, createdAt: now, updatedAt: now,
+      }));
+      this.persistClaims(legacyClaims);
+    }
     this.selectedSourceId.set(sources[0]?.id ?? null);
     this.loadSourceDraft(sources[0]);
     this.view.set('research');
@@ -270,18 +281,52 @@ export class App implements OnInit {
   }
   discardTopicSuggestion(): void { this.topicForm = { title: '', country: '', period: '', category: '', summary: '' }; this.topicSuggestion.set(false); this.suggestedSources.set([]); this.notice.set('Themenvorschlag verworfen.'); }
   async researchDossier(dossier: Dossier): Promise<void> {
-    const result = await this.runAi('research', { title: dossier.title, currentFacts: dossier.facts, analytics: this.store.metrics() });
-    if (result) {
-      this.dossierForm.notes = `${this.dossierForm.notes}\n\nKI-Recherche zur redaktionellen Prüfung:\n${result}`.trim();
-      const current = this.currentSources();
-      const additions = this.lastCitations().map(item => ({ id: crypto.randomUUID(), title: item.title || item.url, publisher: this.hostname(item.url), url: item.url, retrievedAt: new Date().toISOString().slice(0, 10), pinpoint: '', status: 'unreviewed' as const, note: '', relatedClaims: [] }));
-      const merged = [...current];
-      for (const source of additions) if (!merged.some(existing => existing.url === source.url)) merged.push(source);
-      this.persistSources(merged);
-      this.selectedSourceId.set(additions[0]?.id ?? merged[0]?.id ?? null);
-      this.loadSourceDraft(merged.find(source => source.id === this.selectedSourceId()));
-      this.saveDossier();
+    const result = await this.runAi('research', { title: dossier.title, country: this.store.topics().find(item => item.id === dossier.topicId)?.country ?? '', period: this.store.topics().find(item => item.id === dossier.topicId)?.period ?? '', category: this.store.topics().find(item => item.id === dossier.topicId)?.category ?? '', currentFacts: dossier.facts, analytics: this.store.metrics() });
+    if (!result) return;
+    const draft = parseResearchDraft(result);
+    const current = this.currentSources();
+    const citations = this.lastCitations();
+    const sourceUrls = new Set(citations.map(item => this.normalizeUrl(item.url)));
+    for (const claim of draft?.claims ?? []) {
+      if (/^https?:\/\//i.test(claim.sourceUrl)) sourceUrls.add(this.normalizeUrl(claim.sourceUrl));
     }
+    const additions: ResearchSource[] = [...sourceUrls]
+      .filter(url => url && !current.some(existing => this.normalizeUrl(existing.url) === url))
+      .map(url => {
+        const citation = citations.find(item => this.normalizeUrl(item.url) === url);
+        return { id: crypto.randomUUID(), title: citation?.title || this.hostname(url) || url, publisher: this.hostname(url), url, retrievedAt: new Date().toISOString().slice(0, 10), pinpoint: '', status: 'unreviewed', note: 'Von der KI vorgeschlagen; Originalquelle und Belegkraft noch nicht redaktionell geprüft.', relatedClaims: [] };
+      });
+    const merged = [...current];
+    merged.push(...additions);
+    this.persistSources(merged);
+    if (!draft) {
+      this.dossierForm.notes = `${this.dossierForm.notes}\n\nKI-Recherche (nicht strukturiert, bitte redaktionell prüfen):\n${result}`.trim();
+      this.saveDossier();
+      this.notice.set('Quellen wurden ergänzt. Die KI-Antwort ließ sich nicht als Aussagenliste einlesen und wurde als Notiz abgelegt.');
+      return;
+    }
+    const timestamp = new Date().toISOString();
+    const existingClaims = dossier.claims ?? [];
+    const claims: DossierClaim[] = draft.claims.flatMap(item => {
+      const source = merged.find(entry => this.normalizeUrl(entry.url) === this.normalizeUrl(item.sourceUrl));
+      if (!source) return [];
+      const duplicate = existingClaims.some(claim => claim.text.toLocaleLowerCase() === item.text.toLocaleLowerCase() && claim.sourceIds.includes(source.id));
+      if (duplicate) return [];
+      return [{ id: crypto.randomUUID(), text: item.text, sourceIds: [source.id], pinpoint: item.pinpoint, excerpt: item.excerpt, note: '', status: 'suggested', origin: 'ai', createdAt: timestamp, updatedAt: timestamp }];
+    });
+    this.persistClaims([...existingClaims, ...claims]);
+    const topic = this.store.topics().find(item => item.id === dossier.topicId);
+    if (topic && (draft.country || draft.period || draft.category)) {
+      this.store.saveTopics(this.store.topics().map(item => item.id === topic.id ? { ...item, country: draft.country || item.country, period: draft.period || item.period, category: draft.category || item.category } : item));
+    }
+    this.dossierForm.notes = `${this.dossierForm.notes}\n\nKI-Rechercheüberblick:\n${draft.summary}`.trim();
+    this.selectedSourceId.set(claims[0]?.sourceIds[0] ?? additions[0]?.id ?? merged[0]?.id ?? null);
+    this.loadSourceDraft(merged.find(source => source.id === this.selectedSourceId()));
+    this.saveDossier();
+    const sourceCount = merged.length - current.length;
+    this.notice.set(sourceCount || claims.length
+      ? `${sourceCount} Quellen und ${claims.length} ungeprüfte Aussagevorschläge ergänzt. Prüfe jeden Vorschlag in der Originalquelle.`
+      : 'Die KI-Recherche lieferte keine verwendbaren Quellen-URLs oder neuen Aussagen. Prüfe den Jobstatus und starte die Recherche erneut.');
   }
   async auditScript(script: PodcastScript): Promise<void> {
     const dossier = this.store.dossiers().find(item => item.id === script.dossierId);
@@ -325,11 +370,28 @@ export class App implements OnInit {
     this.selectedSourceId.set(remaining[0]?.id ?? null); this.loadSourceDraft(remaining[0]);
   }
   deleteSelectedSource(): void { const source = this.currentSources().find(item => item.id === this.selectedSourceId()); if (source) this.deleteSource(source); }
-  claims(): string[] { return this.dossierForm.facts.split(/\r?\n+/).map(line => line.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean); }
-  claimLinked(claim: string): boolean { return this.currentSources().find(source => source.id === this.selectedSourceId())?.relatedClaims.includes(claim) ?? false; }
-  toggleClaim(claim: string): void {
-    const id = this.selectedSourceId(); if (!id) return;
-    const sources = this.currentSources().map(source => source.id !== id ? source : { ...source, relatedClaims: source.relatedClaims.includes(claim) ? source.relatedClaims.filter(item => item !== claim) : [...source.relatedClaims, claim] });
-    this.persistSources(sources); this.loadSourceDraft(sources.find(source => source.id === id));
+  claims(): DossierClaim[] { const sourceId = this.selectedSourceId(); return (this.currentDossier()?.claims ?? []).filter(claim => !sourceId || claim.sourceIds.includes(sourceId)); }
+  private persistClaims(claims: DossierClaim[]): void {
+    const dossier = this.currentDossier(); if (!dossier) return;
+    this.store.saveDossiers(this.store.dossiers().map(item => item.id === dossier.id ? { ...item, claims, approved: false, updatedAt: new Date().toISOString() } : item));
   }
+  addClaim(): void {
+    const sourceId = this.selectedSourceId(); const text = this.claimDraft.trim(); if (!sourceId || !text) return;
+    const timestamp = new Date().toISOString();
+    this.persistClaims([...(this.currentDossier()?.claims ?? []), { id: crypto.randomUUID(), text, sourceIds: [sourceId], pinpoint: '', excerpt: '', note: '', status: 'suggested', origin: 'manual', createdAt: timestamp, updatedAt: timestamp }]);
+    this.claimDraft = '';
+  }
+  updateClaim(id: string, patch: Partial<Pick<DossierClaim, 'text' | 'pinpoint' | 'excerpt' | 'note' | 'status'>>): void {
+    const claims = (this.currentDossier()?.claims ?? []).map(claim => claim.id === id ? { ...claim, ...patch, updatedAt: new Date().toISOString() } : claim);
+    const updated = claims.find(claim => claim.id === id);
+    if (updated?.status === 'confirmed') {
+      const facts = new Set(this.dossierForm.facts.split(/\r?\n+/).map(value => value.trim()).filter(Boolean));
+      facts.add(updated.text.trim());
+      this.dossierForm.facts = [...facts].join('\n');
+    }
+    this.persistClaims(claims);
+    if (updated?.status === 'confirmed') this.saveDossier();
+  }
+  deleteClaim(id: string): void { this.persistClaims((this.currentDossier()?.claims ?? []).filter(claim => claim.id !== id)); }
+  private normalizeUrl(value: string): string { try { const url = new URL(value); url.hash = ''; return url.toString().replace(/\/$/, '').toLowerCase(); } catch { return value.trim().toLowerCase(); } }
 }

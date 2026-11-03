@@ -98,9 +98,16 @@
               <label>Belegauszug / redaktionelle Notiz<textarea rows="4" [(ngModel)]="sourceDraft.note" placeholder="Was belegt diese Quelle konkret? Was bleibt offen?"></textarea></label>
               <button class="button secondary" [disabled]="!selectedSourceId()" (click)="saveSource()">Quelle speichern</button>
             </section>
-            <aside class="claim-rail"><div class="source-rail-head"><strong>Zugehörige Aussagen</strong></div><p class="claim-help">Wähle die Aussagen, auf die sich die ausgewählte Quelle bezieht.</p>
-              @for (claim of claims(); track claim) { <label class="claim-link"><input type="checkbox" [checked]="claimLinked(claim)" [disabled]="!selectedSourceId()" (change)="toggleClaim(claim)"><span>{{ claim }}</span></label> }
+            <aside class="claim-rail"><div class="source-rail-head"><strong>Aussagen zu dieser Quelle</strong></div><p class="claim-help">KI-Vorschläge sind ungeprüft. Öffne die Quelle, prüfe Aussage und Fundstelle und bestätige sie einzeln.</p>
+              @for (claim of claims(); track claim.id) { <article class="claim-card" [class.confirmed]="claim.status === 'confirmed'"><div class="claim-card-head"><span class="status-tag" [class.approved]="claim.status === 'confirmed'">{{ claim.status === 'confirmed' ? 'Bestätigt' : claim.status === 'suggested' ? 'Ungeprüft' : claim.status === 'contradicts' ? 'Widerspricht' : claim.status === 'context' ? 'Kontext' : claim.status === 'rejected' ? 'Verworfen' : 'Unsicher' }}</span><button class="text-button danger-text" (click)="deleteClaim(claim.id)">Entfernen</button></div>
+                <label>Aussage<textarea rows="3" [value]="claim.text" (change)="updateClaim(claim.id, { text: $any($event.target).value })"></textarea></label>
+                <label>Fundstelle<input [value]="claim.pinpoint" placeholder="Abschnitt, Seite oder Datum" (change)="updateClaim(claim.id, { pinpoint: $any($event.target).value })"></label>
+                @if (claim.excerpt) { <blockquote class="claim-excerpt">{{ claim.excerpt }}</blockquote> }
+                <label>Redaktionelle Notiz<textarea rows="2" [value]="claim.note" placeholder="Prüfergebnis oder offene Frage" (change)="updateClaim(claim.id, { note: $any($event.target).value })"></textarea></label>
+                <div class="claim-card-actions"><select [value]="claim.status" (change)="updateClaim(claim.id, { status: $any($event.target).value })"><option value="suggested">Ungeprüft</option><option value="confirmed">Bestätigt</option><option value="contradicts">Widerspricht</option><option value="context">Kontext</option><option value="uncertain">Unsicher</option><option value="rejected">Verwerfen</option></select>@if (claim.status !== 'confirmed') { <button class="button primary" (click)="updateClaim(claim.id, { status: 'confirmed' })">✓ Aussage bestätigen</button> }</div>
+              </article> }
               @if (!claims().length) { <p class="source-empty">Noch keine Aussagen eingetragen.</p> }
+              @if (selectedSourceId()) { <div class="add-claim"><textarea rows="3" [(ngModel)]="claimDraft" placeholder="Eigene Aussage für diese Quelle"></textarea><button class="button secondary" [disabled]="!claimDraft.trim()" (click)="addClaim()">Aussage hinzufügen</button></div> }
               <details class="claims-editor"><summary>Aussagen bearbeiten</summary><textarea rows="7" [(ngModel)]="dossierForm.facts" placeholder="Eine Aussage pro Zeile. Unsicherheiten offen markieren."></textarea></details>
             </aside>
           </div>

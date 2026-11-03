@@ -48,8 +48,30 @@ export interface Dossier {
   facts: string;
   sources: string;
   sourceRecords?: ResearchSource[];
+  claims?: DossierClaim[];
   approved: boolean;
   updatedAt: string;
+}
+
+export interface DossierClaim {
+  id: string;
+  text: string;
+  sourceIds: string[];
+  pinpoint: string;
+  excerpt: string;
+  note: string;
+  status: 'suggested' | 'confirmed' | 'contradicts' | 'context' | 'rejected' | 'uncertain';
+  origin: 'ai' | 'manual' | 'legacy';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ResearchDraft {
+  summary: string;
+  country: string;
+  period: string;
+  category: string;
+  claims: Array<{ text: string; sourceUrl: string; pinpoint: string; excerpt: string }>;
 }
 
 export interface ResearchSource {
@@ -152,6 +174,31 @@ export function parseTopicSuggestion(text: string): TopicSuggestion | null {
   const contentLines = lines.filter(line => !/^#{1,6}\s/.test(line) && !fieldPattern.test(line) && !/^\|?\s*(?:[-:| ]+)?\|?$/.test(line));
   const summary = (fields['summary'] || contentLines.join('\n')).replace(/^\*\*Zusammenfassung:\*\*\s*/i, '').split(/\n\s*\|/)[0].trim().slice(0, 1200);
   return { title, country: fields['country'] || '', period: fields['period'] || '', category: fields['category'] || '', summary };
+}
+
+export function parseResearchDraft(text: string): ResearchDraft | null {
+  const start = text.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0, quoted = false, escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
+    if (quoted) { if (escaped) escaped = false; else if (char === '\\') escaped = true; else if (char === '"') quoted = false; continue; }
+    if (char === '"') quoted = true;
+    else if (char === '{') depth++;
+    else if (char === '}' && --depth === 0) {
+      try {
+        const value = JSON.parse(text.slice(start, i + 1)) as Record<string, unknown>;
+        const claims = Array.isArray(value['claims']) ? value['claims'].flatMap(item => {
+          if (!item || typeof item !== 'object') return [];
+          const claim = item as Record<string, unknown>;
+          if (typeof claim['text'] !== 'string' || !claim['text'].trim()) return [];
+          return [{ text: claim['text'].trim(), sourceUrl: stringValue(claim['sourceUrl']), pinpoint: stringValue(claim['pinpoint']), excerpt: stringValue(claim['excerpt']) }];
+        }) : [];
+        return { summary: stringValue(value['summary']), country: stringValue(value['country']), period: stringValue(value['period']), category: stringValue(value['category']), claims };
+      } catch { return null; }
+    }
+  }
+  return null;
 }
 
 function stringValue(value: unknown): string { return typeof value === 'string' ? value : ''; }
